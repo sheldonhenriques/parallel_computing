@@ -1,0 +1,41 @@
+import pyrqlite.dbapi2 as dbapi2
+import time
+import logging
+
+# Set up logging
+logging.basicConfig(filename='rqlite_write_test.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Connect to the database
+connection = dbapi2.connect(
+    host='svhenriques-1-of-3',
+    port=4001,
+)
+
+try:
+    with connection.cursor() as cursor:
+        cursor.execute('CREATE TABLE IF NOT EXISTS foo (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)')
+
+        # Measure the time for inserting data
+        num_records = 2500
+        logging.info(f'Inserting {num_records} records...')
+        start_time = time.time()
+
+        for i in range(num_records):
+            name = 'user' + str(i)
+            cursor.execute('INSERT INTO foo(name) VALUES(?)', (name,))
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        logging.info(f'Time taken to insert {num_records} records: {elapsed_time:.2f} seconds')
+
+        with connection.cursor() as cursor:
+            # Read a single record with qmark parameter style
+            sql = "SELECT * FROM foo"
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            logging.info(f'Number of records fetched: {len(result)}')
+
+        cursor.execute('DROP TABLE foo')
+
+finally:
+    connection.close()
